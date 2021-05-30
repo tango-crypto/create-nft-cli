@@ -1,0 +1,181 @@
+cardano-cli address key-gen \
+--verification-key-file payment.vkey \
+--signing-key-file payment.skey
+
+cardano-cli address build \
+--payment-verification-key-file payment.vkey \
+--out-file payment.addr \
+--mainnet
+
+cardano-cli query utxo --address $(cat payment.addr) --mainnet 
+
+
+cardano-cli query protocol-parameters \
+--mainnet \
+--out-file protocol.json
+
+
+cardano-cli address key-gen \
+    --verification-key-file policy.vkey \
+    --signing-key-file policy.skey
+
+
+cardano-cli address key-hash --payment-verification-key-file policy.vkey 
+86c4c595371738281d374fa4fa7180b0d3adf56a7eb9ea2d9cbab109
+
+
+cardano-cli query tip --mainnet
+{
+    "epoch": 267,
+    "hash": "ac54780aa50aa6680c682851af87af6b0af7790fe96429d200ac4d60b3737b1c",
+    "slot": 30106142,
+    "block": 5750431
+}
+
+
+cat policy.script
+{
+    "type": "all",
+    "scripts": [
+      {
+        "keyHash": "86c4c595371738281d374fa4fa7180b0d3adf56a7eb9ea2d9cbab109",
+        "type": "sig"
+      },
+      {
+        "type": "before",
+        "slot": 30106442
+      }
+    ]
+}
+
+cardano-cli transaction policyid --script-file policy.script 
+6596e958394d65d378086b7cdff00ff823d2463dd9d3f0739c73275b
+
+
+cat metadata.json
+{
+    "721": {
+        "fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7": {
+          "TangoNFT": {
+            "name": "Tango 0001",
+            "image": "ipfs://QmY9gydScXwQA4wzhFo1vqVpDkgi7sP4gH5TFmz8GYPF98"
+          }
+    }
+}
+
+
+cardano-cli transaction build-raw \
+  --fee 0 \
+  --tx-in 58b7d31015482e4aefa834c5ec4911bd6952ef86bec6d77689f9b7a6bf4e9305#0 \
+  --tx-out $(cat payment.addr)+5000000+"1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT" \
+  --mint="1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT" \
+  --metadata-json-file metadata.json \
+  --out-file matx.raw
+
+
+  cardano-cli transaction calculate-min-fee \
+--tx-body-file matx.raw \
+--tx-in-count 1 \
+--tx-out-count 1 \
+--witness-count 2 \
+--mainnet \
+--protocol-params-file protocol.json
+187809 Lovelace
+
+
+expr 5000000 - 187809
+4812191
+
+
+cardano-cli transaction build-raw \
+  --mary-era \
+  --fee 187809 \
+  --tx-in 58b7d31015482e4aefa834c5ec4911bd6952ef86bec6d77689f9b7a6bf4e9305#0 \
+  --tx-out $(cat payment.addr)+4812191+"1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT" \
+  --mint="1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT" \
+  --metadata-json-file metadata.json \
+  --invalid-hereafter=30106442\
+  --out-file matx.raw
+
+
+  cardano-cli transaction sign \
+  --signing-key-file payment.skey \
+  --signing-key-file policy.skey \
+  --script-file policy.script \
+  --mainnet \
+  --tx-body-file matx.raw \
+  --out-file matx.signed
+
+  cardano-cli transaction submit --tx-file  matx.signed --mainnet
+
+
+  ardano-cli query utxo --address $(cat payment.addr) --mainnet 
+                           TxHash                                 TxIx        Amount
+--------------------------------------------------------------------------------------
+4be19689d92e95087f29cd325388b1dcf084134a567b274f102b8e64373d4a08     0        4812191 lovelace + 1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT
+
+
+##########  Send the new native asset to another address ##########
+
+cardano-cli transaction build-raw \
+  --mary-era \
+  --fee 0 \
+  --tx-in 4be19689d92e95087f29cd325388b1dcf084134a567b274f102b8e64373d4a08#0 \
+  --tx-out addr1q9e56ctpw0580099eepjwr7zzylv9fr58drncp6vrq8jnhc0qrxl65dfu4tlsjnt434y9n4np4erdxrv7jtru2kc0xvqfveu50+0+"1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT" \
+  --tx-out $(cat payment.addr)+4812191 \
+  --invalid-hereafter 0 \
+  --out-file sendFTtx.raw
+
+
+  cardano-cli transaction calculate-min-fee \
+--tx-body-file sendFTtx.raw \
+--tx-in-count 1 \
+--tx-out-count 2 \
+--witness-count 1 \
+--mainnet \
+--protocol-params-file protocol.json
+ 
+177249 Lovelace
+
+
+expr 4812191 - 177249 - 1555554
+3079388
+
+
+cardano-cli query tip --mainnet
+  {
+      "epoch": 267,
+      "hash": "b0aa033d25918da905c5e79453bd6f1bc2db067b7ae7116f7b94fa438bf20820",
+      "slot": 30356205,
+      "block": 5762935
+  }
+ 
+  expr 30356205 + 12000
+  30368205
+
+
+  cardano-cli transaction build-raw \
+--mary-era \
+--fee 177249 \
+--tx-in 4be19689d92e95087f29cd325388b1dcf084134a567b274f102b8e64373d4a08#0 \
+--tx-out addr1q9e56ctpw0580099eepjwr7zzylv9fr58drncp6vrq8jnhc0qrxl65dfu4tlsjnt434y9n4np4erdxrv7jtru2kc0xvqfveu50+1555554+"1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT" \
+--tx-out $(cat payment.addr)+3079388 \
+--invalid-hereafter 30368205 \
+--out-file sendFTtx.raw
+
+
+cardano-cli transaction sign \
+--tx-body-file sendFTtx.raw \
+--signing-key-file payment.skey \
+--mainnet \
+--out-file sendFTtx.signed
+
+
+cardano-cli transaction submit --tx-file  sendFTtx.signed --mainnet
+
+
+cardano-cli query utxo --address $(cat payment.addr) --mainnet 
+                           TxHash                               TxIx   Amount
+--------------------------------------------------------------------------------------
+fab57c1a89050e4469c2aaf5dc22ae1413a6551d9a8781b879a497a1d296781a  1    3079388 lovelace
+
