@@ -73,7 +73,7 @@ cardano-cli transaction build-raw \
   --out-file matx.raw
 
 
-  cardano-cli transaction calculate-min-fee \
+cardano-cli transaction calculate-min-fee \
 --tx-body-file matx.raw \
 --tx-in-count 1 \
 --tx-out-count 1 \
@@ -93,6 +93,7 @@ cardano-cli transaction build-raw \
   --tx-in 58b7d31015482e4aefa834c5ec4911bd6952ef86bec6d77689f9b7a6bf4e9305#0 \
   --tx-out $(cat payment.addr)+4812191+"1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT" \
   --mint="1 fcd7249ddd5bae5d98351bedd56eca999541589c872ef20b77d04ad7.TangoNFT" \
+  --minting-script-file policy.script \
   --metadata-json-file metadata.json \
   --invalid-hereafter=30106442\
   --out-file matx.raw
@@ -101,7 +102,6 @@ cardano-cli transaction build-raw \
   cardano-cli transaction sign \
   --signing-key-file payment.skey \
   --signing-key-file policy.skey \
-  --script-file policy.script \
   --mainnet \
   --tx-body-file matx.raw \
   --out-file matx.signed
